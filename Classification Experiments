@@ -1,0 +1,55 @@
+## Classification Experiments
+
+#load libraries
+library(caret)
+library(randomForest)
+library(kernlab)
+
+# Random Forests Classification Experiments
+set.seed(100)
+rfModel2 <- randomForest(x = training[, opt_rfe_subset], y = training$Class, importance = TRUE, ntree = 1000)
+varImpPlot(rfModel2, sort=TRUE, n.var=19)
+
+#model Accuracy
+rfPredictOOB <- predict(rfModel2, predict.all = TRUE)
+rfValuesOOB <- data.frame(obs = training$Class, pred = rfPredictOOB)
+defaultSummary(rfValuesOOB)
+confusionMatrix(rfPredictOOB,training$Class, positive = "1")
+
+# Predicting with testing data
+rfPredictTest <- predict(rfModel2, testing[, predVars])
+rfValuesTest <- data.frame(obs = testing$Class, pred = rfPredictTest)
+defaultSummary(rfValuesTest)
+rfValuesTest
+confusionMatrix(rfPredictTest,testing$Class, positive = "1")
+
+###############################################################################
+# SVM Classification with rf-RFE opt variables
+
+library(kernlab)
+library(caret)
+#train model
+set.seed(100)
+svmRTuned <- train(x = training[, opt_rfe_subset], 
+                   y = training$Class, 
+                   method = "svmLinear", 
+                   tuneLength = 14, 
+                   trControl = trainControl(method = "boot",
+                                            number = 500))
+svmRTuned$finalModel
+plot(varImp(svmRTuned),19) 
+varImp(svmRTuned)
+
+# predict with training
+svmpredicttrain <- predict(svmRTuned, training[, opt_rfe_subset])
+svmValues <- data.frame(obs = training$Class, pred = svmpredicttrain)
+defaultSummary(svmValues)
+confusionMatrix(svmpredicttrain,training$Class, positive = "1")
+
+#predict with test data
+svmpredicttest <- predict(svmRTuned, testing[, opt_rfe_subset])
+svmValues1 <- data.frame(obs = testing$Class, pred = svmpredicttest)
+defaultSummary(svmValues1)
+confusionMatrix(svmpredicttest,testing$Class, positive = "1")
+
+save.image("~/Desktop/Experiments/Classification/rfRFE_results.RData")
