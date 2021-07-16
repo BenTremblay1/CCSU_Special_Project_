@@ -1,0 +1,31 @@
+##Quality Assessment with arrayQualityMetrics function.  
+## Load libraries
+
+library("arrayQualityMetrics")
+
+#Arrays before preprocessing
+arrayQualityMetrics(expressionset = array,
+                    outdir = "Before_Processing_Report_for_Combined_Data",
+                    do.logtransform = TRUE)
+#RMA Preprocessed Report
+arrayQualityMetrics(expressionset = eset,
+                    outdir = "RMA_Preprocessed_Report_for_Combined_Data",
+                    do.logtransform = FALSE)
+
+#MAS5 Preprocessed Report
+arrayQualityMetrics(expressionset = eset,
+                    outdir = "MAS5_LOG_Report_for_Combined_Data",
+                    do.logtransform = TRUE)
+
+##Summarizes data - Sample Statistics
+
+array_stats = apply(exprs(array),2,summary)  
+rma_stats = apply(exprs(eset),2,summary) 
+mas5_stats = apply(exprs(eset2),2,summary) 
+
+##save & import to Excel for review
+write.csv(array_stats, file = " array_stats.txt")
+write.csv(rma_stats, file = "rma_stats.txt")
+write.csv(Mas5_stats, file = " Mas5_stats.txt")
+
+##Array and MAS5 data is log2 transformed in Excel for summary statistics
