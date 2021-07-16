@@ -1,0 +1,58 @@
+## Load libraries
+
+library(affy)
+library(affybatch)
+library(limma)
+library(tkwidgets)
+
+# RMA + MAS5 Preprocessing: Combined Raw Data (all 3 sets)
+## Set Working Directory
+setwd("~/Desktop/DATA 599/Data/Raw_Data/Combined_Raw_Data")
+list.celfiles()
+names = list.celfiles()
+names=dir(pattern = "CEL.gz")
+array = ReadAffy(widget = TRUE)
+
+#RMA 
+eset <- affy::rma(array)
+
+#MAS5
+eset2 = mas5(array, normalize = TRUE, analysis = "absolute")
+calls <- mas5calls(array)
+
+#Save Files
+write.exprs(eset, file="combined_data_rma.txt")
+write.exprs(eset2, file="combined_data_MAS5.txt")
+write.exprs(calls, file="combined_data_detectioncalls.txt")
+
+##Quality Assessment with arrayQualityMetrics function.  
+## Load libraries
+
+library("arrayQualityMetrics")
+
+#Arrays before preprocessing
+arrayQualityMetrics(expressionset = array,
+                    outdir = "Before_Processing_Report_for_Combined_Data",
+                    do.logtransform = TRUE)
+#RMA Preprocessed Report
+arrayQualityMetrics(expressionset = eset,
+                    outdir = "RMA_Preprocessed_Report_for_Combined_Data",
+                    do.logtransform = FALSE)
+
+#MAS5 Preprocessed Report
+arrayQualityMetrics(expressionset = eset,
+                    outdir = "MAS5_LOG_Report_for_Combined_Data",
+                    do.logtransform = TRUE)
+
+##Summarizes data - Sample Statistics
+
+array_stats = apply(exprs(array),2,summary)  
+rma_stats = apply(exprs(eset),2,summary) 
+mas5_stats = apply(exprs(eset2),2,summary) 
+
+##save & import to Excel for review
+write.csv(array_stats, file = " array_stats.txt")
+write.csv(rma_stats, file = "rma_stats.txt")
+write.csv(Mas5_stats, file = " Mas5_stats.txt")
+
+##Array and MAS5 data is log2 transformed in Excel for summary statistics
