@@ -1,0 +1,124 @@
+##RFE Feature Selection - Regression
+
+library(caret)
+library(randomForest)
+
+## Read in Processed Data
+newData <- read.csv("~/Desktop/DATA 599/Data/newData_For_RFE.csv", header = TRUE, row.names = 1)
+DFS_time <- read.csv("~/Desktop/DATA 599/Data/DFS_time_data.csv")
+
+probe_sets <- newData[,colnames(newData)[c(1:14923)]]
+DFS_time <- DFS_time[, colnames(DFS_time)[c(1)]]
+DFS_time <- as.numeric(DFS_time)
+
+## training & test split
+set.seed(100)
+split <- createDataPartition(DFS_time, p = 0.8, list = FALSE)
+adData <- probe_sets
+adData$DFS_time <- DFS_time
+training <- adData[split, ]
+testing <- adData[-split, ]
+predVars <- names(probe_sets)
+
+# Set Sequence and Function
+varSeq <- c(2:30, 50, 100, 200, 400, 800, 1600, 3000, 5000, 10000, 14923)
+newRF <- rfFuncs
+
+# RFE 
+set.seed(100)
+ctrl <- rfeControl(method = "boot", functions = newRF, rerank = TRUE, number = 50, verbose = TRUE)
+start_time <- Sys.time()
+rfRFE <- rfe(x = training[, predVars], y = training$DFS_time, sizes = varSeq, rfeControl = ctrl, ntree = 1000)
+end_time <- Sys.time()
+run_time <- end_time - start_time #report Time difference of 9.389845 hours
+save.image("~/Desktop/Experiments/Regression/Untitled.RData")
+
+# Top Variables from RFE
+head(rfRFE$optVariables)
+plot(rfRFE)
+ggplot(rfRFE)
+rfRFE  # print out
+
+# 'Selected' model contains all 14,923 variables.  When the "optimal" size by rfe is greater than 30, start with 
+# 30 and apply the one-standard-error (or tolerance) rule to the performance metric reported for the size of 30. 
+
+# Update rfe after oneSE # to retrieve subset sizes 2:30, need to use 1:29**
+indexSize <- oneSE(rfRFE$results[1:29,], metric = "RMSE", num = 50, maximize = FALSE)
+new_rfe <- update(rfRFE, x = training[, predVars], y = training$DFS_time, size = varSeq[indexSize])
+plot(new_rfe)
+
+# best variables from updated rfe
+opt_rfe_subset <- new_rfe$bestVar
+
+########################################################################################################
+
+##RFE Feature Selection - Classification
+#load libraries
+library(caret)
+library(randomForest)
+library(kernlab)
+
+## Read in Processed Data
+newData <- read.csv("~/Desktop/Experiments/Classification/Filtered_for_RFE.csv")
+
+## transpose & split variables & DFS_time
+data <- as.data.frame(t(newData))
+names(data) <- data[1,]
+data <- data[-1,]
+data <- data[,-1]
+Data_For_RFE <- write.csv(data, file = "Data_For_RFE.csv")
+
+## Read data in for RFE experiments
+Data_For_RFE <- read.csv("~/Desktop/Experiments/Classification/Data_For_RFE.csv", header = TRUE, row.names = 1)
+rfsEvent <- read.csv("~/Desktop/Experiments/Classification/rfsEvent2.csv")
+
+## Variable & Class Labels
+probe_sets <- Data_For_RFE[,colnames(Data_For_RFE)[c(1:21852)]]
+rfsEvent <- as.factor(rfsEvent[1:397,1])
+
+## training & test split
+set.seed(100)
+split <- createDataPartition(rfsEvent, p = 0.8, list = FALSE)
+adData <- probe_sets
+adData$Class <- rfsEvent
+adData$Class <- as.factor(adData$Class)
+training <- adData[split, ]
+testing <- adData[-split, ]
+predVars <- names(probe_sets)
+
+## RF-RFE Controls
+fiveStats <- function(...) c(twoClassSummary(...),defaultSummary(...))
+varSeq <- c(2:30, 50, 75, 100, 200, 400, 800, 1600, 3000, 5000, 10000, 15000, 17500, 21852)
+newRF <- rfFuncs
+newRF$summary <- fiveStats
+ctrl <- rfeControl(method = "boot",
+                   functions = newRF,
+                   rerank = TRUE,
+                   number = 50,
+                   verbose = TRUE)
+## RF-RFE 
+set.seed(100)
+start_time <- Sys.time()
+rfRFE <- rfe(x = training[, predVars],
+             y = training$Class,
+             sizes = varSeq,
+             metric = "ROC",
+             rfeControl = ctrl,
+             ntree = 1000)
+end_time <- Sys.time()
+run_time <- end_time - start_time #report Time difference of 7.492043 hours
+
+# Top Variables from RFE
+head(rfRFE$optVariables)
+ggplot(rfRFE)
+ggplot(rfRFE)
+rfRFE # print out
+
+# Discuss opt. results and need for simpler model
+# Update rfe after oneSE
+indexSize <- oneSE(rfRFE$results[1:29,], metric = "Accuracy", num = 50, maximize = TRUE)
+new_rfe <- update(rfRFE, x = training[, predVars], y = training$Class, size = varSeq[indexSize])
+
+# best variables from updated rfe
+opt_rfe_subset <- new_rfe$bestVar
+ggplot(new_rfe)
