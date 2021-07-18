@@ -1,5 +1,5 @@
                                             CCSU Special Project 
-    Predicting the Probability or Occurrence of Relapse for Colorectal Cancer Patients using Gene Expression Data
+    Predicting the Probability and Occurrence of Relapse for Colorectal Cancer Patients using Gene Expression Data
 
                                             Benjamin J. Tremblay
 
